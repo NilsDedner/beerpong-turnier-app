@@ -8,13 +8,14 @@ const open = ref(false)
 <template>
   <div class="relative">
     <button
-      class="flex flex-col justify-center gap-1.5 w-10 h-10 rounded-lg hover:bg-neutral-800 transition items-center"
+      class="flex flex-col justify-center items-center gap-1.5 w-11 h-11 rounded-lg border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 hover:border-beer-500 transition"
       aria-label="Menü"
+      title="Menü"
       @click="open = !open"
     >
-      <span class="block w-5 h-0.5 bg-neutral-300 rounded"></span>
-      <span class="block w-5 h-0.5 bg-neutral-300 rounded"></span>
-      <span class="block w-5 h-0.5 bg-neutral-300 rounded"></span>
+      <span class="block w-6 h-0.5 bg-beer-300 rounded"></span>
+      <span class="block w-6 h-0.5 bg-beer-300 rounded"></span>
+      <span class="block w-6 h-0.5 bg-beer-300 rounded"></span>
     </button>
 
     <!-- Backdrop zum Schließen -->
