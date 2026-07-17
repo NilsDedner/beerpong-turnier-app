@@ -1,19 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useTournamentStore } from '@/stores/tournament'
+import { roundLayout } from '@/lib/tables'
 import MatchCard from './MatchCard.vue'
 
 const store = useTournamentStore()
 
-// Alle noch offenen Matches der aktuellen Event-Runde (auch die, die auf ihren
-// Tisch warten), sortiert nach Tisch. So sieht der Admin die Reihenfolge.
-const roundMatches = computed(() =>
-  store
-    .matchesForEventRound(store.currentEventRound)
-    .filter((m) => m.status !== 'done'),
+// Angezeigte Runde (folgt der aktuellen Runde, kann aber zurückgesetzt werden,
+// um frühere Runden zu korrigieren).
+const viewRound = ref(store.currentEventRound)
+watch(
+  () => store.currentEventRound,
+  (er) => {
+    viewRound.value = er
+  },
 )
+
+const availableRounds = computed(() =>
+  Array.from({ length: store.currentEventRound }, (_, i) => i + 1),
+)
+
+function roundDone(er: number): boolean {
+  const ms = store.matchesForEventRound(er)
+  return ms.length > 0 && ms.every((m) => m.status === 'done')
+}
+
+const viewLayout = computed(() => roundLayout(viewRound.value))
+const roundMatches = computed(() => store.matchesForEventRound(viewRound.value))
 const mainMatches = computed(() => roundMatches.value.filter((m) => m.bracket === 'main'))
 const botrMatches = computed(() => roundMatches.value.filter((m) => m.bracket === 'botr'))
+
+const showRebuild = computed(
+  () => viewRound.value === store.currentEventRound && store.rebuildPending,
+)
 </script>
 
 <template>
@@ -24,34 +43,43 @@ const botrMatches = computed(() => roundMatches.value.filter((m) => m.bracket ==
     </div>
 
     <template v-else>
-      <!-- Kopf: aktuelle Runde -->
+      <!-- Runden-Wahl (auch zum Korrigieren früherer Runden) -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm text-neutral-500">Runde:</span>
+        <button
+          v-for="er in availableRounds"
+          :key="er"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition"
+          :class="viewRound === er
+            ? 'bg-beer-500 text-neutral-950'
+            : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'"
+          @click="viewRound = er"
+        >
+          {{ er }}<span v-if="roundDone(er)"> ✓</span>
+        </button>
+      </div>
+
+      <!-- Kopf der gewählten Runde -->
       <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div class="font-display text-2xl tracking-wide text-beer-300">
-              {{ store.currentLayout.name }}
-            </div>
-            <div class="text-sm text-neutral-400">{{ store.currentLayout.plays }}</div>
+            <div class="font-display text-2xl tracking-wide text-beer-300">{{ viewLayout.name }}</div>
+            <div class="text-sm text-neutral-400">{{ viewLayout.plays }}</div>
           </div>
           <span
-            v-if="store.currentLayout.mode"
+            v-if="viewLayout.mode"
             class="text-xs px-2.5 py-1 rounded-full bg-purple-900 text-purple-200"
           >
-            {{ store.currentLayout.mode }}
+            {{ viewLayout.mode }}
           </span>
         </div>
 
-        <!-- Umbau-Hinweis -->
         <div
-          v-if="store.rebuildPending"
+          v-if="showRebuild"
           class="mt-3 flex items-center gap-2 bg-amber-900/40 border border-amber-800 text-amber-200 rounded-lg px-3 py-2 text-sm"
         >
-          🔧 <span><strong>Umbau nötig:</strong> {{ store.currentLayout.rebuildBefore }}</span>
+          🔧 <span><strong>Umbau nötig:</strong> {{ viewLayout.rebuildBefore }}</span>
         </div>
-      </div>
-
-      <div v-if="roundMatches.length === 0" class="text-neutral-400 bg-neutral-900 border border-neutral-800 rounded-xl p-6 text-center">
-        Aktuell keine offenen Matches — warten auf Ergebnisse aus vorherigen Runden. 🍻
       </div>
 
       <section v-if="mainMatches.length">

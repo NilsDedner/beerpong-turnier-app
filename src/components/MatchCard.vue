@@ -9,10 +9,14 @@ const busy = ref(false)
 const err = ref<string | null>(null)
 
 const tableNo = computed(() => store.tableNoOf(props.match))
-const blocked = computed(() => props.match.status !== 'done' && store.isTableBlocked(props.match))
+const done = computed(() => props.match.status === 'done')
+const blocked = computed(() => !done.value && store.isMatchBlocked(props.match))
+// Bei fertigen Spielen: Korrektur möglich, solange kein Folgespiel entschieden ist.
+const locked = computed(() => done.value && store.isDownstreamLocked(props.match))
 
 async function pick(teamId: string | null) {
-  if (!teamId || busy.value || blocked.value) return
+  if (!teamId || busy.value || blocked.value || locked.value) return
+  if (teamId === props.match.winner_id) return
   busy.value = true
   err.value = null
   try {
@@ -23,12 +27,29 @@ async function pick(teamId: string | null) {
     busy.value = false
   }
 }
+
+async function undo() {
+  if (busy.value || locked.value) return
+  busy.value = true
+  err.value = null
+  try {
+    await store.undoMatch(props.match)
+  } catch (e: any) {
+    err.value = e?.message ?? String(e)
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
   <div
-    class="bg-neutral-900 border rounded-xl p-3"
-    :class="blocked ? 'border-neutral-800 opacity-60' : 'border-neutral-800'"
+    class="rounded-xl p-3 border"
+    :class="[
+      done ? 'bg-neutral-900/60 border-neutral-800' : 'bg-neutral-900 border-neutral-800',
+      blocked ? 'opacity-60' : '',
+      match.bracket === 'main' ? 'border-l-4 border-l-beer-500' : 'border-l-4 border-l-sky-500',
+    ]"
   >
     <div class="flex items-center justify-between mb-2 gap-2">
       <div class="flex items-center gap-2 min-w-0">
@@ -48,8 +69,8 @@ async function pick(teamId: string | null) {
     <div class="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
       <button
         class="team-btn"
-        :class="match.winner_id === match.team_a_id ? 'is-winner' : ''"
-        :disabled="busy || blocked"
+        :class="match.winner_id === match.team_a_id ? 'is-winner' : done ? 'is-loser' : ''"
+        :disabled="busy || blocked || locked"
         @click="pick(match.team_a_id)"
       >
         {{ store.teamName(match.team_a_id) || 'TBD' }}
@@ -59,8 +80,8 @@ async function pick(teamId: string | null) {
 
       <button
         class="team-btn"
-        :class="match.winner_id === match.team_b_id ? 'is-winner' : ''"
-        :disabled="busy || blocked"
+        :class="match.winner_id === match.team_b_id ? 'is-winner' : done ? 'is-loser' : ''"
+        :disabled="busy || blocked || locked"
         @click="pick(match.team_b_id)"
       >
         {{ store.teamName(match.team_b_id) || 'TBD' }}
@@ -68,10 +89,25 @@ async function pick(teamId: string | null) {
     </div>
 
     <p v-if="err" class="text-red-400 text-xs mt-2">{{ err }}</p>
+
+    <!-- Fertig: Korrektur-Zeile -->
+    <div v-else-if="done" class="flex items-center justify-between mt-2">
+      <span v-if="locked" class="text-xs text-neutral-600">🔒 Folgespiel läuft – nicht änderbar</span>
+      <span v-else class="text-xs text-neutral-500">anderes Team antippen zum Korrigieren</span>
+      <button
+        v-if="!locked"
+        class="text-xs text-amber-400 hover:text-amber-300 disabled:opacity-40"
+        :disabled="busy"
+        @click="undo"
+      >
+        ↩ Rückgängig
+      </button>
+    </div>
+
     <p v-else-if="blocked" class="text-amber-400 text-xs mt-2 text-center">
-      ⏳ Wartet — vorheriges Spiel an Tisch {{ tableNo }} läuft noch
+      ⏳ Wartet — vorherige Spiele dieser Runde laufen noch
     </p>
-    <p v-else-if="match.status === 'ready'" class="text-neutral-500 text-xs mt-2 text-center">
+    <p v-else class="text-neutral-500 text-xs mt-2 text-center">
       Auf das Sieger-Team tippen
     </p>
   </div>
@@ -86,5 +122,8 @@ async function pick(teamId: string | null) {
 }
 .team-btn.is-winner {
   @apply bg-green-800 border-green-600 text-green-50;
+}
+.team-btn.is-loser {
+  @apply text-neutral-500 line-through;
 }
 </style>

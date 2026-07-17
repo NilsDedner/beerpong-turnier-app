@@ -12,7 +12,8 @@ import type { Bracket, Match } from '@/types'
  *  Event-Runde 2 : Achtelfinale (8) + BotR R1 (8)              → Tische 1–16
  *  Event-Runde 3 : Viertelfinale (4) + BotR VF (4)            → Tische 5–12
  *    ── Umbau in Zweitischmodus ──
- *  Event-Runde 4 : Halbfinale (2) + BotR HF (2), nacheinander → Tische 1–2
+ *  Event-Runde 4 : erst beide Halbfinals (2) gleichzeitig, dann
+ *                  beide BotR-Halbfinals (2) gleichzeitig            → Tische 1–2
  *    ── Umbau auf einen Tisch ──
  *  Event-Runde 5 : erst BotR-Finale, dann großes Finale       → Tisch 1
  */
@@ -55,9 +56,9 @@ export function assignmentOf(m: Match): TableAssignment {
   }
 
   if (er === 4) {
-    // Zweitischmodus: Championship-Halbfinals auf Tisch 1 (nacheinander),
-    // BotR-Halbfinals auf Tisch 2 (nacheinander).
-    return { eventRound: 4, tableNo: main ? 1 : 2, sequence: m.slot }
+    // Zweitischmodus: zuerst beide Championship-Halbfinals gleichzeitig
+    // (Tisch 1 + 2, Welle 0), dann beide BotR-Halbfinals gleichzeitig (Welle 1).
+    return { eventRound: 4, tableNo: m.slot + 1, sequence: main ? 0 : 1 }
   }
 
   // Event-Runde 5, ein Tisch: erst BotR-Finale, dann großes Finale.

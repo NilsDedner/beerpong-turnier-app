@@ -72,16 +72,17 @@ export const useTournamentStore = defineStore('tournament', () => {
   }
 
   /**
-   * Ein Match ist "blockiert", wenn auf demselben Tisch derselben Event-Runde
-   * ein Spiel mit niedrigerer Reihenfolge noch nicht entschieden ist
-   * (Zweitisch-/Ein-Tisch-Modus: nacheinander spielen).
+   * Ein Match ist "blockiert", wenn in derselben Event-Runde ein Spiel mit
+   * niedrigerer Reihenfolge (Welle) noch nicht entschieden ist. So werden in
+   * Runde 4 erst beide Championship-Halbfinals gespielt, dann beide BotR-
+   * Halbfinals; in Runde 5 erst das BotR-Finale, dann das große Finale.
    */
-  function isTableBlocked(m: Match): boolean {
+  function isMatchBlocked(m: Match): boolean {
     const a = assignmentOf(m)
     return matches.value.some((o) => {
       if (o.id === m.id || o.status === 'done') return false
       const b = assignmentOf(o)
-      return b.eventRound === a.eventRound && b.tableNo === a.tableNo && b.sequence < a.sequence
+      return b.eventRound === a.eventRound && b.sequence < a.sequence
     })
   }
 
@@ -235,6 +236,37 @@ export const useTournamentStore = defineStore('tournament', () => {
     await updateMatch(target.id, patch)
   }
 
+  /** Entfernt ein platziertes Team wieder aus einem Zielmatch (fuer Undo). */
+  async function clearTeamFromTarget(bracket: Bracket, round: number, slot: number, pos: SlotPos) {
+    const target = findMatch(bracket, round, slot)
+    if (!target) return
+    const patch: Partial<Match> =
+      pos === 'a' ? { team_a_id: null } : { team_b_id: null }
+    // Zielmatch verliert ein Team -> nicht mehr spielbar, evtl. Sieger loeschen.
+    patch.status = 'pending'
+    patch.winner_id = null
+    await updateMatch(target.id, patch)
+  }
+
+  /**
+   * Macht ein entschiedenes Match rueckgaengig: Sieger/Verlierer werden aus den
+   * Folgematches entfernt, das Match wird wieder spielbar. Nur moeglich, solange
+   * kein Folgespiel bereits entschieden ist.
+   */
+  async function undoMatch(match: Match) {
+    if (match.status !== 'done') return
+    if (isDownstreamLocked(match)) {
+      throw new Error('Zuerst das Folgespiel korrigieren — es ist schon entschieden.')
+    }
+    if (match.winner_to_round != null) {
+      await clearTeamFromTarget(match.winner_to_bracket!, match.winner_to_round, match.winner_to_slot!, match.winner_to_pos!)
+    }
+    if (match.loser_to_round != null) {
+      await clearTeamFromTarget(match.loser_to_bracket!, match.loser_to_round, match.loser_to_slot!, match.loser_to_pos!)
+    }
+    await updateMatch(match.id, { winner_id: null, status: 'ready' })
+  }
+
   /** Prueft, ob ein Folgematch bereits entschieden ist (dann keine Korrektur mehr). */
   function isDownstreamLocked(match: Match): boolean {
     const targets: Match[] = []
@@ -252,8 +284,8 @@ export const useTournamentStore = defineStore('tournament', () => {
   async function setWinner(match: Match, winnerTeamId: string) {
     if (!match.team_a_id || !match.team_b_id) return
     if (match.winner_id === winnerTeamId) return
-    if (match.status !== 'done' && isTableBlocked(match)) {
-      throw new Error('Erst das vorherige Spiel an diesem Tisch abschließen.')
+    if (match.status !== 'done' && isMatchBlocked(match)) {
+      throw new Error('Erst die vorherigen Spiele dieser Runde abschließen.')
     }
     if (match.status === 'done' && isDownstreamLocked(match)) {
       throw new Error('Ergebnis kann nicht mehr geändert werden — ein Folgespiel ist bereits entschieden.')
@@ -287,11 +319,12 @@ export const useTournamentStore = defineStore('tournament', () => {
     teamById, teamName, started, playableMatches, recentResults, champion, botrChampion,
     bracketMatches, findMatch,
     // tables & event rounds
-    tableNoOf, isTableBlocked, currentEventRound, currentLayout, rebuildPending, matchesForEventRound,
+    tableNoOf, isMatchBlocked, isDownstreamLocked, currentEventRound, currentLayout,
+    rebuildPending, matchesForEventRound,
     // constants
     TEAM_COUNT, THIRD_PLACE_ROUND,
     // actions
     init, dispose, createTeam, updateTeam, deleteTeam, generateDemoTeams,
-    drawAndStart, resetTournament, setThirdPlace, setWinner,
+    drawAndStart, resetTournament, setThirdPlace, setWinner, undoMatch,
   }
 })
