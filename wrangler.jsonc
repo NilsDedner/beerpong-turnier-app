@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers – statisches Hosting der gebauten Vue-App (dist/).
+  // Deploy manuell:   npx wrangler deploy   (nach `npm run build`)
+  // Oder automatisch: Cloudflare-Dashboard mit dem GitHub-Repo verbinden
+  //                   (Build-Command: npm run build, Output: dist).
+  "name": "beerpong-turnier-app",
+  "compatibility_date": "2026-07-06",
+  "assets": {
+    "directory": "./dist",
+    // SPA: unbekannte Pfade liefern index.html (Router nutzt Hash-Routing).
+    "not_found_handling": "single-page-application"
+  }
+}

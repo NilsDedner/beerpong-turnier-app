@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2
+      text-neutral-100 placeholder-neutral-500 focus:outline-none
+      focus:ring-2 focus:ring-beer-500 focus:border-beer-500;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-beer-500
+      px-4 py-2 font-medium text-neutral-950 hover:bg-beer-400
+      disabled:opacity-40 disabled:cursor-not-allowed transition;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1 rounded-lg
+      bg-neutral-800 border border-neutral-700 px-4 py-2 font-medium
+      text-neutral-100 hover:bg-neutral-700
+      disabled:opacity-40 disabled:cursor-not-allowed transition;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-red-900
+      border border-red-800 px-4 py-2 font-medium text-red-100
+      hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed transition;
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  @apply bg-neutral-950 text-neutral-100 antialiased;
+  margin: 0;
+}
+
+/* Ticker-Animation fuer das Display */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
