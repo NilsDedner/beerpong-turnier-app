@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { backend, type RealtimeEvent } from '@/lib/backend'
 import { generateBracket, shuffled, TEAM_COUNT, THIRD_PLACE_ROUND } from '@/lib/bracket'
+import { assignmentOf, eventRoundOf, roundLayout, LAST_EVENT_ROUND } from '@/lib/tables'
 import type { Bracket, Match, Settings, SlotPos, Team } from '@/types'
 
 const DEMO_ADJECTIVES = [
@@ -18,7 +19,7 @@ const DEMO_NOUNS = [
 export const useTournamentStore = defineStore('tournament', () => {
   const teams = ref<Team[]>([])
   const matches = ref<Match[]>([])
-  const settings = ref<Settings>({ id: 1, status: 'setup', third_place: true, title: 'Beer Pong Turnier' })
+  const settings = ref<Settings>({ id: 1, status: 'setup', third_place: false, title: 'Beer Pong Turnier' })
   const loading = ref(true)
   const error = ref<string | null>(null)
   /** 'supabase' = Cloud/Realtime, 'local' = Offline-Fallback (nur dieses Gerät). */
@@ -63,6 +64,55 @@ export const useTournamentStore = defineStore('tournament', () => {
     return matches.value
       .filter((m) => m.bracket === bracket)
       .sort((a, b) => a.round - b.round || a.slot - b.slot)
+  }
+
+  // ---------- Tische & Event-Runden ----------
+  function tableNoOf(m: Match): number {
+    return assignmentOf(m).tableNo
+  }
+
+  /**
+   * Ein Match ist "blockiert", wenn auf demselben Tisch derselben Event-Runde
+   * ein Spiel mit niedrigerer Reihenfolge noch nicht entschieden ist
+   * (Zweitisch-/Ein-Tisch-Modus: nacheinander spielen).
+   */
+  function isTableBlocked(m: Match): boolean {
+    const a = assignmentOf(m)
+    return matches.value.some((o) => {
+      if (o.id === m.id || o.status === 'done') return false
+      const b = assignmentOf(o)
+      return b.eventRound === a.eventRound && b.tableNo === a.tableNo && b.sequence < a.sequence
+    })
+  }
+
+  /** Aktuelle Event-Runde = kleinste Runde mit noch offenen Matches. */
+  const currentEventRound = computed(() => {
+    const open = matches.value.filter((m) => m.status !== 'done')
+    if (!open.length) return matches.value.length ? LAST_EVENT_ROUND : 1
+    return Math.min(...open.map((m) => eventRoundOf(m.bracket, m.round)))
+  })
+
+  const currentLayout = computed(() => roundLayout(currentEventRound.value))
+
+  /** Steht der Umbau vor der aktuellen Runde noch aus? (noch kein Spiel der Runde entschieden) */
+  const rebuildPending = computed(() => {
+    const l = currentLayout.value
+    if (!l.rebuildBefore) return false
+    const anyDone = matches.value.some(
+      (m) => m.status === 'done' && eventRoundOf(m.bracket, m.round) === l.eventRound,
+    )
+    return !anyDone
+  })
+
+  /** Matches einer Event-Runde, sortiert nach Tisch dann Reihenfolge. */
+  function matchesForEventRound(er: number): Match[] {
+    return matches.value
+      .filter((m) => eventRoundOf(m.bracket, m.round) === er)
+      .sort((a, b) => {
+        const aa = assignmentOf(a)
+        const bb = assignmentOf(b)
+        return aa.tableNo - bb.tableNo || aa.sequence - bb.sequence
+      })
   }
 
   // ---------- Laden + Realtime ----------
@@ -202,6 +252,9 @@ export const useTournamentStore = defineStore('tournament', () => {
   async function setWinner(match: Match, winnerTeamId: string) {
     if (!match.team_a_id || !match.team_b_id) return
     if (match.winner_id === winnerTeamId) return
+    if (match.status !== 'done' && isTableBlocked(match)) {
+      throw new Error('Erst das vorherige Spiel an diesem Tisch abschließen.')
+    }
     if (match.status === 'done' && isDownstreamLocked(match)) {
       throw new Error('Ergebnis kann nicht mehr geändert werden — ein Folgespiel ist bereits entschieden.')
     }
@@ -233,6 +286,8 @@ export const useTournamentStore = defineStore('tournament', () => {
     // getters
     teamById, teamName, started, playableMatches, recentResults, champion, botrChampion,
     bracketMatches, findMatch,
+    // tables & event rounds
+    tableNoOf, isTableBlocked, currentEventRound, currentLayout, rebuildPending, matchesForEventRound,
     // constants
     TEAM_COUNT, THIRD_PLACE_ROUND,
     // actions

@@ -41,7 +41,7 @@ export interface Backend {
 const DEFAULT_SETTINGS: Settings = {
   id: 1,
   status: 'setup',
-  third_place: true,
+  third_place: false,
   title: 'Beer Pong Turnier',
 }
 

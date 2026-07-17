@@ -3,17 +3,22 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import BracketView from '@/components/BracketView.vue'
+import ArenaPlan from '@/components/ArenaPlan.vue'
 import RecentResults from '@/components/RecentResults.vue'
-import type { Bracket } from '@/types'
 
 const store = useTournamentStore()
 
-const active = ref<Bracket>('main')
+type ViewKey = 'arena' | 'main' | 'botr'
+const ROTATION: ViewKey[] = ['arena', 'main', 'botr']
+
+const active = ref<ViewKey>('arena')
 const autoRotate = ref(true)
 let timer: number | undefined
 
 function tick() {
-  if (autoRotate.value) active.value = active.value === 'main' ? 'botr' : 'main'
+  if (!autoRotate.value) return
+  const i = ROTATION.indexOf(active.value)
+  active.value = ROTATION[(i + 1) % ROTATION.length]
 }
 
 onMounted(() => {
@@ -23,8 +28,8 @@ onBeforeUnmount(() => {
   if (timer) window.clearInterval(timer)
 })
 
-function select(b: Bracket) {
-  active.value = b
+function select(v: ViewKey) {
+  active.value = v
   autoRotate.value = false
 }
 </script>
@@ -53,8 +58,15 @@ function select(b: Bracket) {
       </div>
     </header>
 
-    <!-- Baum-Umschalter -->
-    <div class="flex items-center justify-center gap-2 py-4">
+    <!-- Ansicht-Umschalter -->
+    <div class="flex items-center justify-center gap-2 py-4 flex-wrap">
+      <button
+        class="px-5 py-2 rounded-full font-display text-xl tracking-wide transition"
+        :class="active === 'arena' ? 'bg-purple-500 text-neutral-950' : 'bg-neutral-900 text-neutral-400 hover:text-neutral-200'"
+        @click="select('arena')"
+      >
+        🏓 Tische
+      </button>
       <button
         class="px-5 py-2 rounded-full font-display text-xl tracking-wide transition"
         :class="active === 'main' ? 'bg-beer-500 text-neutral-950' : 'bg-neutral-900 text-neutral-400 hover:text-neutral-200'"
@@ -75,7 +87,7 @@ function select(b: Bracket) {
       </label>
     </div>
 
-    <!-- Baum -->
+    <!-- Inhalt -->
     <main class="flex-1 px-6">
       <div v-if="!store.started" class="h-full flex items-center justify-center text-center">
         <div>
@@ -85,6 +97,7 @@ function select(b: Bracket) {
           </p>
         </div>
       </div>
+      <ArenaPlan v-else-if="active === 'arena'" />
       <BracketView v-else :bracket="active" />
     </main>
 
