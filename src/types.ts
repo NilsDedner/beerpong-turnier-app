@@ -38,6 +38,7 @@ export interface Settings {
   status: TournamentStatus
   third_place: boolean
   title: string
+  active_round: number
 }
 
 /** Match-Zeile ohne DB-generierte Felder — fuer Inserts. */

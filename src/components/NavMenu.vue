@@ -26,6 +26,8 @@ const open = ref(false)
       class="absolute left-0 mt-2 z-50 w-48 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden"
     >
       <RouterLink to="/display" class="menu-item" @click="open = false">📺 Display</RouterLink>
+      <RouterLink to="/regeln" class="menu-item" @click="open = false">📖 Spielregeln</RouterLink>
+      <div class="border-t border-neutral-800"></div>
       <RouterLink to="/admin" class="menu-item" @click="open = false">🛠️ Admin</RouterLink>
     </div>
   </div>

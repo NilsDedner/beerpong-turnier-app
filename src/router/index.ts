@@ -6,6 +6,7 @@ const router = createRouter({
     // Standardmäßig landet man auf dem Display.
     { path: '/', redirect: '/display' },
     { path: '/display', name: 'display', component: () => import('@/views/DisplayView.vue') },
+    { path: '/regeln', name: 'regeln', component: () => import('@/views/RulesView.vue') },
     { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/display' },
   ],

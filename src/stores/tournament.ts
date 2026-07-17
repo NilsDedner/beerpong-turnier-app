@@ -19,7 +19,7 @@ const DEMO_NOUNS = [
 export const useTournamentStore = defineStore('tournament', () => {
   const teams = ref<Team[]>([])
   const matches = ref<Match[]>([])
-  const settings = ref<Settings>({ id: 1, status: 'setup', third_place: false, title: 'Beer Pong Turnier' })
+  const settings = ref<Settings>({ id: 1, status: 'setup', third_place: false, title: 'Beer Pong Turnier', active_round: 1 })
   const loading = ref(true)
   const error = ref<string | null>(null)
   /** 'supabase' = Cloud/Realtime, 'local' = Offline-Fallback (nur dieses Gerät). */
@@ -86,14 +86,30 @@ export const useTournamentStore = defineStore('tournament', () => {
     })
   }
 
-  /** Aktuelle Event-Runde = kleinste Runde mit noch offenen Matches. */
-  const currentEventRound = computed(() => {
-    const open = matches.value.filter((m) => m.status !== 'done')
-    if (!open.length) return matches.value.length ? LAST_EVENT_ROUND : 1
-    return Math.min(...open.map((m) => eventRoundOf(m.bracket, m.round)))
-  })
+  /**
+   * Vom Organisator gesteuerte, angezeigte Runde. Wird per „Nächste Runde
+   * starten" hochgezählt (z.B. erst nach dem Arena-Umbau). Display, Admin und
+   * Arena-Plan richten sich danach.
+   */
+  const currentEventRound = computed(() =>
+    Math.min(Math.max(1, settings.value.active_round || 1), LAST_EVENT_ROUND),
+  )
 
   const currentLayout = computed(() => roundLayout(currentEventRound.value))
+
+  /** Alle Matches der aktuellen Runde entschieden? */
+  const currentRoundComplete = computed(() => {
+    const ms = matchesForEventRound(currentEventRound.value)
+    return ms.length > 0 && ms.every((m) => m.status === 'done')
+  })
+
+  /** Gibt es eine nächste Runde? (letzte Runde = höchste mit Matches) */
+  const maxEventRound = computed(() =>
+    matches.value.length
+      ? Math.max(...matches.value.map((m) => eventRoundOf(m.bracket, m.round)))
+      : 1,
+  )
+  const hasNextRound = computed(() => currentEventRound.value < maxEventRound.value)
 
   /** Steht der Umbau vor der aktuellen Runde noch aus? (noch kein Spiel der Runde entschieden) */
   const rebuildPending = computed(() => {
@@ -104,6 +120,12 @@ export const useTournamentStore = defineStore('tournament', () => {
     )
     return !anyDone
   })
+
+  /** Schaltet auf die nächste Runde weiter (nur wenn die aktuelle fertig ist). */
+  async function startNextRound() {
+    if (!currentRoundComplete.value || !hasNextRound.value) return
+    settings.value = await backend.updateSettings({ active_round: currentEventRound.value + 1 })
+  }
 
   /** Matches einer Event-Runde, sortiert nach Tisch dann Reihenfolge. */
   function matchesForEventRound(er: number): Match[] {
@@ -206,7 +228,7 @@ export const useTournamentStore = defineStore('tournament', () => {
     const order = shuffled(teams.value)
     const rows = generateBracket(order, settings.value.third_place)
     matches.value = await backend.insertMatches(rows)
-    settings.value = await backend.updateSettings({ status: 'running' })
+    settings.value = await backend.updateSettings({ status: 'running', active_round: 1 })
   }
 
   async function setThirdPlace(value: boolean) {
@@ -216,7 +238,7 @@ export const useTournamentStore = defineStore('tournament', () => {
   async function resetTournament() {
     await backend.deleteAllMatches()
     matches.value = []
-    settings.value = await backend.updateSettings({ status: 'setup' })
+    settings.value = await backend.updateSettings({ status: 'setup', active_round: 1 })
   }
 
   // ---------- Ergebnis eintragen ----------
@@ -320,11 +342,11 @@ export const useTournamentStore = defineStore('tournament', () => {
     bracketMatches, findMatch,
     // tables & event rounds
     tableNoOf, isMatchBlocked, isDownstreamLocked, currentEventRound, currentLayout,
-    rebuildPending, matchesForEventRound,
+    rebuildPending, matchesForEventRound, currentRoundComplete, hasNextRound, maxEventRound,
     // constants
     TEAM_COUNT, THIRD_PLACE_ROUND,
     // actions
     init, dispose, createTeam, updateTeam, deleteTeam, generateDemoTeams,
-    drawAndStart, resetTournament, setThirdPlace, setWinner, undoMatch,
+    drawAndStart, resetTournament, setThirdPlace, setWinner, undoMatch, startNextRound,
   }
 })

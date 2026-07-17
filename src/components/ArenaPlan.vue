@@ -64,6 +64,12 @@ function cellClass(c: TableCell): string {
     <div class="text-center mb-5">
       <span class="font-display text-4xl tracking-wide text-beer-400">{{ store.currentLayout.name }}</span>
       <div class="text-neutral-400 text-sm mt-0.5">{{ store.currentLayout.plays }}</div>
+      <div
+        v-if="store.currentRoundComplete && store.hasNextRound"
+        class="inline-block mt-2 px-4 py-1 rounded-full bg-green-900/50 border border-green-800 text-green-200 text-sm"
+      >
+        ✓ Runde beendet – nächste Runde folgt gleich
+      </div>
     </div>
 
     <!-- Arena-Grundriss (horizontal scrollbar auf kleinen Screens) -->

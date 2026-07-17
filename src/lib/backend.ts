@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS: Settings = {
   status: 'setup',
   third_place: false,
   title: 'Beer Pong Turnier',
+  active_round: 1,
 }
 
 // ============================================================

@@ -89,6 +89,21 @@ watch([viewRound, () => openMatches.value.length], () => {
         </div>
       </div>
 
+      <!-- Nächste Runde starten -->
+      <button
+        v-if="viewRound === store.currentEventRound && store.currentRoundComplete && store.hasNextRound"
+        class="w-full flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-500 text-neutral-950 font-display text-2xl tracking-wide py-4 transition"
+        @click="store.startNextRound()"
+      >
+        🏁 Nächste Runde starten
+      </button>
+      <div
+        v-else-if="viewRound === store.currentEventRound && store.currentRoundComplete && !store.hasNextRound"
+        class="w-full text-center rounded-xl bg-green-900/40 border border-green-800 text-green-200 font-display text-2xl tracking-wide py-4"
+      >
+        🏆 Turnier beendet
+      </div>
+
       <!-- Offene Spiele -->
       <section v-if="openMain.length">
         <h3 class="font-display text-2xl tracking-wide text-beer-300 mb-3">
