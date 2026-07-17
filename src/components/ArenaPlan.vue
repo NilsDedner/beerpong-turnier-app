@@ -66,8 +66,9 @@ function cellClass(c: TableCell): string {
       <div class="text-neutral-400 text-sm mt-0.5">{{ store.currentLayout.plays }}</div>
     </div>
 
-    <!-- Arena-Grundriss -->
-    <div class="flex justify-center gap-4 md:gap-8">
+    <!-- Arena-Grundriss (horizontal scrollbar auf kleinen Screens) -->
+    <div class="overflow-x-auto pb-2">
+    <div class="flex gap-4 md:gap-8 w-max mx-auto px-2">
       <div v-for="zone in ZONES" :key="zone.name" class="flex flex-col">
         <div class="text-center text-xs uppercase tracking-widest text-neutral-500 mb-2">{{ zone.name }}</div>
         <div class="flex flex-col gap-3">
@@ -102,6 +103,7 @@ function cellClass(c: TableCell): string {
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- Legende -->

@@ -37,7 +37,7 @@ function select(v: ViewKey) {
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- Kopf -->
-    <header class="flex items-center justify-between px-6 py-4 border-b border-neutral-900">
+    <header class="flex items-center justify-between gap-3 flex-wrap px-6 py-4 border-b border-neutral-900">
       <div class="flex items-center gap-4">
         <RouterLink to="/" class="text-3xl" title="Startseite">🍺</RouterLink>
         <h1 class="font-display text-4xl md:text-5xl tracking-wide text-beer-400">
