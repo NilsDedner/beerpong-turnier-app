@@ -1,12 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomeView },
-    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue') },
+    // Standardmäßig landet man auf dem Display.
+    { path: '/', redirect: '/display' },
     { path: '/display', name: 'display', component: () => import('@/views/DisplayView.vue') },
+    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue') },
+    { path: '/:pathMatch(.*)*', redirect: '/display' },
   ],
 })
 

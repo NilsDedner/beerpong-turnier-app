@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import TeamManager from '@/components/TeamManager.vue'
 import MatchQueue from '@/components/MatchQueue.vue'
+import NavMenu from '@/components/NavMenu.vue'
 
 const store = useTournamentStore()
 
@@ -59,7 +60,7 @@ async function doReset() {
       />
       <p v-if="codeError" class="text-red-400 text-sm">Falscher Passcode.</p>
       <button type="submit" class="btn-primary w-full">Entsperren</button>
-      <RouterLink to="/" class="block text-xs text-neutral-500 hover:text-neutral-300">← Zurück</RouterLink>
+      <RouterLink to="/display" class="block text-xs text-neutral-500 hover:text-neutral-300">← Zum Display</RouterLink>
     </form>
   </div>
 
@@ -67,7 +68,7 @@ async function doReset() {
   <div v-else class="max-w-6xl mx-auto px-4 py-6">
     <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div class="flex items-center gap-3">
-        <RouterLink to="/" class="text-2xl" title="Startseite">🍺</RouterLink>
+        <NavMenu />
         <h1 class="font-display text-3xl tracking-wide text-beer-400">Admin</h1>
         <span
           class="text-xs px-2 py-1 rounded-full"

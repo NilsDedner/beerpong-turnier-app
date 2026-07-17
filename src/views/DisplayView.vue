@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import BracketView from '@/components/BracketView.vue'
 import ArenaPlan from '@/components/ArenaPlan.vue'
 import RecentResults from '@/components/RecentResults.vue'
+import NavMenu from '@/components/NavMenu.vue'
 
 const store = useTournamentStore()
 
@@ -38,8 +38,9 @@ function select(v: ViewKey) {
   <div class="min-h-screen flex flex-col">
     <!-- Kopf -->
     <header class="flex items-center justify-between gap-3 flex-wrap px-6 py-4 border-b border-neutral-900">
-      <div class="flex items-center gap-4">
-        <RouterLink to="/" class="text-3xl" title="Startseite">🍺</RouterLink>
+      <div class="flex items-center gap-3">
+        <NavMenu />
+        <span class="text-3xl">🍺</span>
         <h1 class="font-display text-4xl md:text-5xl tracking-wide text-beer-400">
           {{ store.settings.title }}
         </h1>
