@@ -12,8 +12,8 @@ import type { Bracket, Match } from '@/types'
  *  Event-Runde 2 : Achtelfinale (8) + BotR R1 (8)              → Tische 1–16
  *  Event-Runde 3 : Viertelfinale (4) + BotR VF (4)            → Tische 5–12
  *    ── Umbau in Zweitischmodus ──
- *  Event-Runde 4 : erst beide Halbfinals (2) gleichzeitig, dann
- *                  beide BotR-Halbfinals (2) gleichzeitig            → Tische 1–2
+ *  Event-Runde 4 : erst beide BotR-Halbfinals (2) gleichzeitig, dann
+ *                  beide Championship-Halbfinals (2) gleichzeitig     → Tische 1–2
  *    ── Umbau auf einen Tisch ──
  *  Event-Runde 5 : erst BotR-Finale, dann großes Finale       → Tisch 1
  */
@@ -56,9 +56,9 @@ export function assignmentOf(m: Match): TableAssignment {
   }
 
   if (er === 4) {
-    // Zweitischmodus: zuerst beide Championship-Halbfinals gleichzeitig
-    // (Tisch 1 + 2, Welle 0), dann beide BotR-Halbfinals gleichzeitig (Welle 1).
-    return { eventRound: 4, tableNo: m.slot + 1, sequence: main ? 0 : 1 }
+    // Zweitischmodus: zuerst beide BotR-Halbfinals gleichzeitig (Tisch 1 + 2,
+    // Welle 0), dann beide Championship-Halbfinals gleichzeitig (Welle 1).
+    return { eventRound: 4, tableNo: m.slot + 1, sequence: main ? 1 : 0 }
   }
 
   // Event-Runde 5, ein Tisch: erst BotR-Finale, dann großes Finale.
@@ -101,7 +101,7 @@ const LAYOUTS: Record<number, RoundLayout> = {
     active: range(5, 12), locked: range(1, 4), free: range(13, 16),
   },
   4: {
-    eventRound: 4, name: 'Runde 4 · Halbfinale', plays: 'Halbfinale + BotR Halbfinale',
+    eventRound: 4, name: 'Runde 4 · Halbfinale', plays: 'BotR-Halbfinale, dann Halbfinale',
     mode: 'Zweitischmodus', rebuildBefore: 'Arena in den Zweitischmodus umbauen',
     active: [1, 2], locked: [], free: range(5, 8),
   },
